@@ -279,24 +279,43 @@ class IStorage {
 }
 
 class StorageZip extends IStorage {
+  #storageO;
+
   constructor() {
     super();
-    this.storageO = null;
+    this.#storageO = null;
   }
   
   async init(path) {
-    this.storageO = await ZIPHelpers.loadZipFromUrl(path);
+    this.#storageO = await ZIPHelpers.loadZipFromUrl(path);
+    let hasSlip = false;
+    const paths = Object.keys(this.#storageO.files);
+    for (const path of paths) {
+      if (path.includes('..')) {
+        delete this.#storageO.files[path];
+        hasSlip = true;
+        log('E Zip Slip:', path);
+      }
+    }
+    if (hasSlip) {
+      const msg = `Invalid paths found in given archive <b>${path}</b>. Loading stopped for ensuring security.`;
+      log(`E ${msg}`);
+      let pane = $O('#cors-error') || $O('#content') || document.body;
+      pane.innerHTML = `⚠ ${msg}`;
+      throw new Error(msg);
+    }
+    Object.freeze(this.#storageO.files);
     return this;
   }
 
   async search(filePath, format = STOF_TEXT) {
-    return await ZIPHelpers.searchArchiveForFile(filePath, this.storageO, format);
+    return await ZIPHelpers.searchArchiveForFile(filePath, this.#storageO, format);
   }
 
   async getSubdirs(parentPath) {
     const subdirs = new Set();
 
-    this.storageO?.forEach((relativePath, file) => {
+    this.#storageO?.forEach((relativePath, file) => {
       if (relativePath.startsWith(parentPath) && relativePath !== parentPath) 
       {
         const subPath = relativePath.slice(parentPath.length);
