@@ -293,15 +293,28 @@ async function doSteganographyCorrectionForImage(data) {
   canvas.width = img.width;
   canvas.height = img.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(1.005, 1.005);
   ctx.drawImage(img, 0, 0);
+  ctx.restore();
+  ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+
+  if (canvas.width > 16 || canvas.height > 16) {
+    // exception : prevent blur of edges and lines in image
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = Math.ceil(img.width * 1.005);
+    tempCanvas.height = Math.ceil(img.height * 1.005);
+    tempCtx.drawImage(img, 0, 0);
+    ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+  }
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const pixels = imageData.data;
   for (let i = 0; i < pixels.length; i += 4) {
-    pixels[i] &= ~1;     // R LSB = 0
-    pixels[i + 1] &= ~1; // G LSB = 0
-    pixels[i + 2] &= ~1; // B LSB = 0
-    // pixels[i + 3] (A)lpha kept
+    pixels[i] = (pixels[i] & ~1) | (Math.random() < 0.5 ? 1 : 0);
+    pixels[i+1] = (pixels[i+1] & ~1) | (Math.random() < 0.5 ? 1 : 0);
+    pixels[i+2] = (pixels[i+2] & ~1) | (Math.random() < 0.5 ? 1 : 0);
+    pixels[i+3] = (pixels[i+3] & ~1) | (Math.random() < 0.5 ? 1 : 0);
   }
   ctx.putImageData(imageData, 0, 0);
 
