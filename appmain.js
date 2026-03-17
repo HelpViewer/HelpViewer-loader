@@ -249,7 +249,9 @@ var _Storage = (() => {
     if (!storagesC.has(key))
       return null;
 
-    return await storagesC.get(key).searchImage(filePath);
+    let rawData = await storagesC.get(key).searchImage(filePath);
+    rawData = await doSteganographyCorrectionForImage(rawData || filePath);
+    return rawData;
   }
 
   function getKey(key) {
@@ -267,6 +269,35 @@ var _Storage = (() => {
     getKey
   };
 })();
+
+async function doSteganographyCorrectionForImage(data) {
+  const img = new Image();
+  if (data.startsWith('data:image/'))
+    img.src = data;
+  else {
+    const response = await fetchDataOrZero(data);
+    if (response.byteLength == 0)
+      return null;
+
+    const content = btoa(String.fromCharCode(...new Uint8Array(response)));
+    img.src = `data:image/${data.split('.').pop().toLowerCase()};base64,${content}`;
+  }
+
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = reject;
+  });
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  const canvasReply = canvas.toDataURL('image/jpeg', 0.90);
+  return canvasReply;
+}
 
 /**
  * @interface
