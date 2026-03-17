@@ -295,7 +295,17 @@ async function doSteganographyCorrectionForImage(data) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0);
 
-  const canvasReply = canvas.toDataURL('image/jpeg', 0.90);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    pixels[i] &= ~1;     // R LSB = 0
+    pixels[i + 1] &= ~1; // G LSB = 0
+    pixels[i + 2] &= ~1; // B LSB = 0
+    // pixels[i + 3] (A)lpha kept
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const canvasReply = canvas.toDataURL('image/png');
   return canvasReply;
 }
 
