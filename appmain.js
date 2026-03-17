@@ -293,10 +293,6 @@ async function doSteganographyCorrectionForImage(data) {
   canvas.width = img.width;
   canvas.height = img.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.scale(1.005, 1.005);
-  ctx.drawImage(img, 0, 0);
-  ctx.restore();
-  ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
 
   if (canvas.width > 16 || canvas.height > 16) {
     // exception : prevent blur of edges and lines in image
@@ -304,8 +300,10 @@ async function doSteganographyCorrectionForImage(data) {
     const tempCtx = tempCanvas.getContext('2d');
     tempCanvas.width = Math.ceil(img.width * 1.005);
     tempCanvas.height = Math.ceil(img.height * 1.005);
-    tempCtx.drawImage(img, 0, 0);
+    tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
     ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.drawImage(img, 0, 0);
   }
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
