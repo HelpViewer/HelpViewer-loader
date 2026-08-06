@@ -261,12 +261,20 @@ var _Storage = (() => {
     return storagesC.get(key);
   }
 
+  function getDateTime(key, filePath) {
+    if (!storagesC.has(key))
+      return undefined;
+
+    return storagesC.get(key).getDateTime(filePath);
+  }
+
   return {
     add,
     search,
     getSubdirs,
     searchImage,
-    getKey
+    getKey,
+    getDateTime
   };
 })();
 
@@ -328,6 +336,7 @@ class IStorage {
   async search(filePath, format) {}
   async getSubdirs(parentPath) {}
   async searchImage(filePath) {}
+  getDateTime(filePath) {}
 }
 
 class StorageZip extends IStorage {
@@ -398,6 +407,10 @@ class StorageZip extends IStorage {
     const reply = new StorageZip();
     await reply.init(this.path, false);
     return reply.#storageO;
+  }
+
+  getDateTime(filePath) {
+    return ZIPHelpers.getDateTime(filePath, this.#storageO);
   }
 }
 
@@ -481,6 +494,10 @@ class StorageDir extends IStorage {
       return null;
     return fpath;
   }
+
+  getDateTime(filePath) {
+    return undefined;
+  }
 }
 
 async function main(baseDataStream = null) {
@@ -534,6 +551,10 @@ const ZIPHelpers = (() => {
       throw error;
     }
   }
+
+  function getDateTime(filePath, arch) {
+    return arch.file(filePath)?.date;
+  }
   
   async function searchArchiveForFile(fileName, arch, format = STOF_TEXT) {
     try {
@@ -546,7 +567,8 @@ const ZIPHelpers = (() => {
 
   return {
     loadZipFromUrl,
-    searchArchiveForFile
+    searchArchiveForFile,
+    getDateTime
   };
 })();
 
